@@ -31,6 +31,7 @@ export default function OAuthRedirect() {
         .then((res) => {
           setUser(res.data); // update auth context immediately
           toast.success('Logged in successfully');
+          setTimeout(() => window.location.reload(), 500);
           navigate('/');
         })
         .catch(() => {

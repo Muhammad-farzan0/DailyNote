@@ -40,11 +40,11 @@ export default function Documentation() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10">
-        {/* Header - fixed alignment */}
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center md:text-left mb-8 md:mb-10"
+          className="text-center md:text-left mb-6 md:mb-8"
         >
           <div className="inline-flex items-center justify-center md:justify-start gap-3 mb-2">
             <BookOpen size={32} className="text-blue-600 dark:text-blue-400" />
@@ -57,9 +57,26 @@ export default function Documentation() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar TOC - sticky, clean background */}
-          <div className="lg:col-span-1 order-2 lg:order-1">
+        {/* Mobile TOC: horizontal scrollable row (visible only on mobile) */}
+        <div className="lg:hidden mb-6 overflow-x-auto pb-2 -mx-2 px-2">
+          <div className="flex gap-2 min-w-max">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => scrollToSection(section.id)}
+                className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
+              >
+                <section.icon size={14} className="text-blue-500" />
+                <span>{section.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main layout: desktop uses grid with sidebar, mobile stacks naturally */}
+        <div className="lg:grid lg:grid-cols-4 lg:gap-8">
+          {/* Desktop TOC (sidebar) – hidden on mobile */}
+          <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 border border-gray-100 dark:border-gray-700">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-800 dark:text-gray-200">
                 <ChevronRight size={18} className="text-blue-500" /> On this page
@@ -79,8 +96,8 @@ export default function Documentation() {
             </div>
           </div>
 
-          {/* Main Content - clean backgrounds, no glass blur on mobile */}
-          <div className="lg:col-span-3 order-1 lg:order-2 space-y-6">
+          {/* Main Content */}
+          <div className="lg:col-span-3 space-y-6">
             {/* Overview */}
             <section ref={sectionRefs.overview} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 md:p-7 scroll-mt-24 border border-gray-100 dark:border-gray-700">
               <h2 className="text-2xl font-bold flex items-center gap-2 mb-4 text-gray-900 dark:text-white">
@@ -97,7 +114,7 @@ export default function Documentation() {
               </p>
             </section>
 
-            {/* Core Features - using clean cards */}
+            {/* Core Features */}
             <section ref={sectionRefs.features} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 md:p-7 scroll-mt-24 border border-gray-100 dark:border-gray-700">
               <h2 className="text-2xl font-bold flex items-center gap-2 mb-5 text-gray-900 dark:text-white">
                 <Sparkles size={24} className="text-yellow-500" /> Core Features
@@ -228,7 +245,7 @@ export default function Documentation() {
                 <li>Use AI assistant (sparkles icon) to generate descriptions or suggest deadlines.</li>
               </ol>
               <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
-                <p className="text-sm flex items-center gap-2 text-blue-800 dark:text-blue-200"><Shield size={16} /> <strong>Privacy & Free Forever:</strong> DailyNote uses no paid APIs. All features are completely free, self‑hosted, or hosted on free tiers (MongoDB Atlas, Render, Vercel).</p>
+                <p className="text-sm flex items-center gap-2 text-blue-800 dark:text-blue-200"><Shield size={16} /> <strong>Privacy & Free Forever:</strong> ✨ DailyNote: A showcase of modern web development – fully functional, beautifully designed, and 100% free..</p>
               </div>
             </section>
           </div>

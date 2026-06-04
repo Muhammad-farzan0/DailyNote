@@ -10,8 +10,9 @@ export const BoardProvider = ({ children, boardId }) => {
   const [lists, setLists] = useState([]);
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
   const socket = useSocket();
-  const { user } = useAuth(); // get current user
+  const { user } = useAuth();
 
   const fetchBoard = useCallback(async () => {
     if (!boardId) return;
@@ -19,25 +20,31 @@ export const BoardProvider = ({ children, boardId }) => {
       const res = await api.get(`/boards/${boardId}`);
       setBoard(res.data);
       setLists(res.data.lists || []);
+      // Compute isOwner now that we have board and user
+      if (user) {
+        const ownerId = res.data.owner?._id || res.data.owner;
+        setIsOwner(ownerId === user._id);
+      }
     } catch (err) {
       toast.error('Failed to load board');
     } finally {
       setLoading(false);
     }
-  }, [boardId]);
+  }, [boardId, user]);
 
   const refresh = useCallback(() => {
+    setLoading(true);
     fetchBoard();
   }, [fetchBoard]);
 
-  // Fetch board when boardId changes OR when user changes (after login)
+  // Wait for user to be loaded before fetching board
   useEffect(() => {
+    if (!user) return;
     fetchBoard();
-  }, [fetchBoard, user]); // 👈 re-fetch when user changes (important for OAuth)
+  }, [fetchBoard, user]);
 
-  // Socket listeners
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !boardId) return;
     socket.emit('join-board', boardId);
     const handleRefresh = () => fetchBoard();
     socket.on('card:moved', handleRefresh);
@@ -63,7 +70,6 @@ export const BoardProvider = ({ children, boardId }) => {
   };
 
   const moveCard = async (cardId, sourceListId, destListId) => {
-    // Optimistic update
     setLists((prevLists) => {
       const newLists = [...prevLists];
       const sourceIndex = newLists.findIndex((l) => l._id === sourceListId);
@@ -101,7 +107,7 @@ export const BoardProvider = ({ children, boardId }) => {
   };
 
   return (
-    <BoardContext.Provider value={{ board, lists, loading, addList, moveCard, addCard, refresh }}>
+    <BoardContext.Provider value={{ board, lists, loading, isOwner, addList, moveCard, addCard, refresh }}>
       {children}
     </BoardContext.Provider>
   );
