@@ -6,8 +6,8 @@ import { useAuth } from '../hooks/useAuth';
 
 export default function OAuthRedirect() {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const hasProcessed = useRef(false);
-  const { setUser } = useAuth(); // we need to expose setUser in AuthContext
 
   useEffect(() => {
     if (hasProcessed.current) return;
@@ -26,13 +26,14 @@ export default function OAuthRedirect() {
     if (token) {
       localStorage.setItem('token', token);
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
       api.get('/auth/me')
         .then((res) => {
-          setUser(res.data); // update auth context immediately
+          setUser(res.data);
           toast.success('Logged in successfully');
-          setTimeout(() => window.location.reload(), 500);
-          navigate('/');
+          // 🔁 FAST RELOAD – almost invisible (100ms)
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
         })
         .catch(() => {
           localStorage.removeItem('token');

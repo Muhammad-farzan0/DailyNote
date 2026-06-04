@@ -27,8 +27,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, [logout]);
 
-  // Inside AuthContext.jsx, modify login and register:
-
+  // Modified login with fast reload (100ms)
   const login = async (email, password) => {
     try {
       const res = await api.post("/auth/login", { email, password });
@@ -37,8 +36,10 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       setUser(user);
       toast.success("Welcome back!");
-      // Force reload to ensure board context gets fresh user data
-      setTimeout(() => window.location.reload(), 500);
+      // 🔁 FAST RELOAD – almost invisible
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
       return true;
     } catch (err) {
       toast.error(err.response?.data?.message || "Login failed");
@@ -46,6 +47,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Modified register with fast reload (100ms)
   const register = async (name, email, password) => {
     try {
       const res = await api.post("/auth/register", { name, email, password });
@@ -54,7 +56,9 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       setUser(user);
       toast.success("Account created!");
-      setTimeout(() => window.location.reload(), 500);
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
       return true;
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed");

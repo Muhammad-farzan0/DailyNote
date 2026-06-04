@@ -1,14 +1,16 @@
 import axios from 'axios';
 
 export const generateDescription = async (req, res, next) => {
-  try {
-    const { prompt } = req.body;
-    if (!prompt) return res.status(400).json({ message: 'Prompt is required' });
+  const { prompt } = req.body;
+  if (!prompt) {
+    return res.status(400).json({ message: 'Prompt is required' });
+  }
 
-    // Using GPT-2 (free model)
+  try {
     const model = 'gpt2';
+    const url = `https://api-inference.huggingface.co/models/${model}`;
     const response = await axios.post(
-      `https://api-inference.huggingface.co/models/${model}`,
+      url,
       { inputs: prompt },
       { headers: { Authorization: `Bearer ${process.env.HF_API_TOKEN}` } }
     );
@@ -19,14 +21,17 @@ export const generateDescription = async (req, res, next) => {
     res.json({ text: generatedText });
   } catch (err) {
     console.error('Hugging Face error:', err.response?.data || err.message);
-    res.status(500).json({ message: 'AI generation failed', error: err.message });
+    // Fallback response – does not crash
+    res.json({
+      text: `✨ AI generated (fallback): "${prompt}"\n\n(The AI service is temporarily unavailable. Please try again later.)`
+    });
   }
 };
 
 export const suggestDeadline = async (req, res, next) => {
   try {
     const { title } = req.body;
-    let days = title.toLowerCase().includes('urgent') ? 1 : 3;
+    let days = title?.toLowerCase().includes('urgent') ? 1 : 3;
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + days);
     res.json({ suggestedDueDate: deadline });

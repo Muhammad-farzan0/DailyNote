@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
-import { Sun, Moon, LogOut, Menu, Bell, Check } from 'lucide-react';
+import { Sun, Moon, LogOut, Menu, Bell, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
@@ -51,6 +51,7 @@ export default function Navbar({ onMenuClick }) {
     return () => socket.off('new-notification', handleNewNotification);
   }, [socket]);
 
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -106,13 +107,18 @@ export default function Navbar({ onMenuClick }) {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+                  className="fixed left-4 right-4 top-16 md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
                 >
                   <div className="flex justify-between items-center px-4 py-2 border-b">
                     <h3 className="font-semibold">Notifications</h3>
-                    {notifications.some(n => !n.read) && (
-                      <button onClick={markAllAsRead} className="text-xs text-blue-600 hover:underline">Mark all as read</button>
-                    )}
+                    <div className="flex gap-2">
+                      {notifications.some(n => !n.read) && (
+                        <button onClick={markAllAsRead} className="text-xs text-blue-600 hover:underline">Mark all read</button>
+                      )}
+                      <button onClick={() => setShowDropdown(false)} className="md:hidden p-1 rounded-full hover:bg-gray-100">
+                        <X size={16} />
+                      </button>
+                    </div>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     {notifications.length === 0 ? (
@@ -122,15 +128,15 @@ export default function Navbar({ onMenuClick }) {
                         <div key={notif._id} className={`p-3 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 transition ${!notif.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
                           <div className="flex items-start gap-2">
                             <span className="text-lg">{getNotificationIcon(notif.type)}</span>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium">{notif.title}</p>
-                              <p className="text-xs text-gray-600 dark:text-gray-400">{notif.message}</p>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium break-words">{notif.title}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 break-words">{notif.message}</p>
                               <Link to={notif.link} className="text-xs text-blue-500 hover:underline" onClick={() => markAsRead(notif._id)}>
                                 View
                               </Link>
                             </div>
                             {!notif.read && (
-                              <button onClick={() => markAsRead(notif._id)} className="text-green-500"><Check size={14} /></button>
+                              <button onClick={() => markAsRead(notif._id)} className="text-green-500 flex-shrink-0"><Check size={14} /></button>
                             )}
                           </div>
                         </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBoard } from '../../context/BoardContext';
 import { useAuth } from '../../hooks/useAuth';
 import { Edit2, Users, X, Search, UserPlus, Trash2 } from 'lucide-react';
@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function BoardHeader({ boardId }) {
-  const { board, refresh, isOwner } = useBoard();
+  const { board, refresh } = useBoard();
   const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
@@ -15,10 +15,32 @@ export default function BoardHeader({ boardId }) {
   const [searchEmail, setSearchEmail] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const hasChecked = useRef(false);
 
+  // Update local board name when board changes
   useEffect(() => {
     if (board) setName(board.name);
   }, [board]);
+
+  // Ownership detection – runs whenever board or user changes
+  useEffect(() => {
+    if (board && user) {
+      // board.owner can be an object { _id } or a string ID
+      const ownerId = board.owner?._id || board.owner;
+      const userId = user._id;
+      const newIsOwner = ownerId === userId;
+      setIsOwner(newIsOwner);
+      hasChecked.current = true;
+    } else if (board && !user && !hasChecked.current) {
+      // User not ready yet – wait a moment, then refresh board to try again
+      const timer = setTimeout(() => {
+        refresh();
+        hasChecked.current = true;
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [board, user, refresh]);
 
   const updateName = async () => {
     if (!name.trim()) return;
@@ -112,6 +134,7 @@ export default function BoardHeader({ boardId }) {
         </div>
       </div>
 
+      {/* Members Modal */}
       <AnimatePresence>
         {showMembers && (
           <motion.div
@@ -135,6 +158,7 @@ export default function BoardHeader({ boardId }) {
                 </button>
               </div>
 
+              {/* Current members list */}
               <div className="mb-4 space-y-2 max-h-48 overflow-y-auto">
                 {board.members?.map(member => (
                   <div key={member._id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -165,6 +189,7 @@ export default function BoardHeader({ boardId }) {
                 ))}
               </div>
 
+              {/* Add member section – only for owner */}
               {isOwner && (
                 <div className="border-t pt-4">
                   <label className="text-sm font-medium mb-1 block">Add by email</label>

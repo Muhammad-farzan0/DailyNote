@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Clock, Users, Calendar, CheckSquare, Trash2, MessageSquare, Tag, Plus, Paperclip, File } from 'lucide-react';
+import { 
+  X, Save, Clock, Users, Calendar, CheckSquare, Trash2, MessageSquare, 
+  Tag, Plus, Paperclip, File, ChevronDown, ChevronUp, AlertCircle 
+} from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import TimerSettings from '../Timer/TimerSettings';
@@ -9,12 +12,12 @@ import { useBoard } from '../../context/BoardContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const LABEL_OPTIONS = [
-  { name: 'bug', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
-  { name: 'feature', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
-  { name: 'enhancement', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
-  { name: 'urgent', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' },
-  { name: 'documentation', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
-  { name: 'question', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' },
+  { name: 'bug', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', icon: '🐞' },
+  { name: 'feature', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: '✨' },
+  { name: 'enhancement', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300', icon: '🚀' },
+  { name: 'urgent', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300', icon: '⚠️' },
+  { name: 'documentation', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300', icon: '📄' },
+  { name: 'question', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', icon: '❓' },
 ];
 
 export default function CardModal({ card, isOpen, onClose }) {
@@ -29,17 +32,19 @@ export default function CardModal({ card, isOpen, onClose }) {
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [attachments, setAttachments] = useState(card.attachments || []);
   const [uploading, setUploading] = useState(false);
-  
-  // Assignees state
   const [assignees, setAssignees] = useState(card.assignees || []);
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [assigneeResults, setAssigneeResults] = useState([]);
-  
+  const [showChecklist, setShowChecklist] = useState(true);
+  const [showComments, setShowComments] = useState(true);
   const { refresh } = useBoard();
 
   // Search users by email
   const searchUsers = async (email) => {
-    if (email.length < 2) return;
+    if (email.length < 2) {
+      setAssigneeResults([]);
+      return;
+    }
     try {
       const res = await api.get(`/users/search?email=${email}`);
       const existingIds = assignees.map(a => a._id);
@@ -51,8 +56,8 @@ export default function CardModal({ card, isOpen, onClose }) {
   };
 
   useEffect(() => {
-    const delay = setTimeout(() => searchUsers(assigneeSearch), 300);
-    return () => clearTimeout(delay);
+    const delayDebounce = setTimeout(() => searchUsers(assigneeSearch), 300);
+    return () => clearTimeout(delayDebounce);
   }, [assigneeSearch]);
 
   const addAssignee = (user) => {
@@ -174,189 +179,293 @@ export default function CardModal({ card, isOpen, onClose }) {
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Card</h2>
+            {/* Header */}
+            <div className="sticky top-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Card</h2>
+              </div>
               <div className="flex gap-2">
-                <button onClick={handleDelete} className="text-red-500 hover:bg-red-50 p-2 rounded-full transition" title="Delete Card">
+                <button
+                  onClick={handleDelete}
+                  className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition"
+                  title="Delete Card"
+                >
                   <Trash2 size={18} />
                 </button>
-                <button onClick={onClose} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full transition">
+                <button
+                  onClick={onClose}
+                  className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition"
+                >
                   <X size={18} />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-2xl font-semibold bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none pb-1"
-                placeholder="Card title"
-              />
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                  placeholder="Write a detailed description..."
-                />
-              </div>
-
-              {/* Labels */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <Tag size={16} /> Labels
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {labels.map(label => {
-                    const option = LABEL_OPTIONS.find(opt => opt.name === label);
-                    return (
-                      <span key={label} className={`px-2 py-1 rounded-full text-xs font-medium ${option?.color || 'bg-gray-100 text-gray-800'}`}>
-                        {label}
-                        <button onClick={() => toggleLabel(label)} className="ml-1 hover:text-red-500">×</button>
-                      </span>
-                    );
-                  })}
-                  <button onClick={() => setShowLabelPicker(!showLabelPicker)} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200">
-                    <Plus size={12} /> Add label
-                  </button>
-                </div>
-                {showLabelPicker && (
-                  <div className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 flex flex-wrap gap-2">
-                    {LABEL_OPTIONS.map(opt => (
-                      <button key={opt.name} onClick={() => { toggleLabel(opt.name); setShowLabelPicker(false); }} className={`px-2 py-1 rounded-full text-xs font-medium ${opt.color}`}>
-                        {opt.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><Calendar size={16} /> Due Date</label>
-                  <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full p-2 border rounded-lg dark:bg-gray-700" />
-                </div>
-                <TimerSettings cardId={card._id} currentDuration={card.timerDuration} />
-              </div>
-
-              {/* Assignees by email */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  <Users size={16} /> Assignees (search by email)
-                </label>
-                <div className="relative">
+            {/* Main Content – Responsive Grid (2 columns on desktop, 1 on mobile) */}
+            <div className="p-6 md:p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column – Main fields */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Title */}
                   <input
-                    type="text"
-                    value={assigneeSearch}
-                    onChange={(e) => setAssigneeSearch(e.target.value)}
-                    placeholder="Search user by email..."
-                    className="w-full p-2 border rounded-lg dark:bg-gray-700"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full text-2xl font-bold bg-transparent border-b-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:outline-none pb-2"
+                    placeholder="Card title"
                   />
-                  {assigneeSearch && assigneeResults.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                      {assigneeResults.map(user => (
-                        <div key={user._id} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center gap-2" onClick={() => addAssignee(user)}>
-                          <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">{user.name.charAt(0)}</div>
-                          <div><div className="text-sm font-medium">{user.name}</div><div className="text-xs text-gray-500">{user.email}</div></div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={4}
+                      className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700/50 resize-y"
+                      placeholder="Write a detailed description..."
+                    />
+                  </div>
+
+                  {/* Labels */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Tag size={16} /> Labels
+                    </label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {labels.map(label => {
+                        const option = LABEL_OPTIONS.find(opt => opt.name === label);
+                        return (
+                          <span key={label} className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${option?.color || 'bg-gray-100 text-gray-800'}`}>
+                            {option?.icon} {label}
+                            <button onClick={() => toggleLabel(label)} className="ml-1 hover:text-red-500">&times;</button>
+                          </span>
+                        );
+                      })}
+                      <button
+                        onClick={() => setShowLabelPicker(!showLabelPicker)}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition"
+                      >
+                        <Plus size={12} /> Add label
+                      </button>
+                    </div>
+                    {showLabelPicker && (
+                      <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 flex flex-wrap gap-2">
+                        {LABEL_OPTIONS.map(opt => (
+                          <button
+                            key={opt.name}
+                            onClick={() => { toggleLabel(opt.name); setShowLabelPicker(false); }}
+                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${opt.color}`}
+                          >
+                            {opt.icon} {opt.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Checklist – Collapsible */}
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setShowChecklist(!showChecklist)}
+                      className="w-full flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CheckSquare size={16} className="text-blue-500" />
+                        <span className="font-medium">Checklist</span>
+                      </div>
+                      {showChecklist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                    {showChecklist && (
+                      <div className="p-4 space-y-3">
+                        {checklist.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={item.completed}
+                              onChange={() => {
+                                const newList = [...checklist];
+                                newList[idx].completed = !newList[idx].completed;
+                                setChecklist(newList);
+                              }}
+                              className="w-4 h-4 rounded border-gray-300"
+                            />
+                            <input
+                              value={item.text}
+                              onChange={(e) => {
+                                const newList = [...checklist];
+                                newList[idx].text = e.target.value;
+                                setChecklist(newList);
+                              }}
+                              className="flex-1 p-2 border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-700/50"
+                              placeholder="Checklist item"
+                            />
+                            <button onClick={() => setChecklist(checklist.filter((_, i) => i !== idx))} className="text-red-500 hover:bg-red-50 p-1 rounded">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => setChecklist([...checklist, { text: '', completed: false }])}
+                          className="text-blue-600 text-sm hover:underline inline-flex items-center gap-1"
+                        >
+                          <Plus size={12} /> Add item
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Comments – Collapsible */}
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setShowComments(!showComments)}
+                      className="w-full flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                    >
+                      <div className="flex items-center gap-2">
+                        <MessageSquare size={16} className="text-blue-500" />
+                        <span className="font-medium">Comments ({comments.length})</span>
+                      </div>
+                      {showComments ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                    {showComments && (
+                      <div className="p-4 space-y-4">
+                        <div className="max-h-48 overflow-y-auto space-y-2">
+                          {comments.length === 0 && <p className="text-gray-400 text-sm">No comments yet.</p>}
+                          {comments.map((c, i) => (
+                            <div key={i} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 text-sm">
+                              <span className="font-semibold">{c.user?.name || 'User'}:</span> {c.text}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            placeholder="Write a comment..."
+                            className="flex-1 p-2 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-700/50"
+                          />
+                          <button onClick={addComment} className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition">Post</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI Assistant */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <AlertCircle size={16} /> AI Assistant
+                    </label>
+                    <AIGenerator onGenerate={(text) => setDescription(prev => prev + '\n\n' + text)} />
+                  </div>
+                </div>
+
+                {/* Right Column – Meta Data (timers, due date, assignees, attachments) */}
+                <div className="space-y-5">
+                  {/* Due Date */}
+                  <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Calendar size={16} /> Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      className="w-full p-2 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-700/50"
+                    />
+                  </div>
+
+                  {/* Timer Settings */}
+                  <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Clock size={16} /> Timer (minutes)
+                    </label>
+                    <TimerSettings cardId={card._id} currentDuration={card.timerDuration} />
+                  </div>
+
+                  {/* Assignees */}
+                  <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Users size={16} /> Assignees
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={assigneeSearch}
+                        onChange={(e) => setAssigneeSearch(e.target.value)}
+                        placeholder="Search user by email..."
+                        className="w-full p-2 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-700/50"
+                      />
+                      {assigneeSearch && assigneeResults.length > 0 && (
+                        <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                          {assigneeResults.map(user => (
+                            <div key={user._id} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center gap-2" onClick={() => addAssignee(user)}>
+                              <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">{user.name.charAt(0)}</div>
+                              <div><div className="text-sm font-medium">{user.name}</div><div className="text-xs text-gray-500">{user.email}</div></div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {assignees.map(assignee => (
+                        <div key={assignee._id} className="inline-flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 rounded-full px-2 py-1 text-sm">
+                          {assignee.name}
+                          <button onClick={() => removeAssignee(assignee._id)} className="ml-1 text-red-500 hover:text-red-700">&times;</button>
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {assignees.map(assignee => (
-                    <div key={assignee._id} className="inline-flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 rounded-full px-2 py-1 text-sm">
-                      {assignee.name}
-                      <button onClick={() => removeAssignee(assignee._id)} className="ml-1 text-red-500">&times;</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* Attachments */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"><Paperclip size={16} /> Attachments</label>
-                <div className="space-y-2">
-                  {attachments.map(att => (
-                    <div key={att.public_id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center gap-2 truncate">
-                        <File size={16} className="text-blue-500" />
-                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline truncate">
-                          {att.filename}
-                        </a>
-                      </div>
-                      <button onClick={() => deleteAttachment(att.public_id)} className="text-red-500 hover:bg-red-50 p-1 rounded">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-                  <div className="flex items-center gap-2">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 transition">
-                      <Plus size={16} /> Upload file
-                      <input type="file" onChange={handleFileUpload} className="hidden" disabled={uploading} />
+                  {/* Attachments */}
+                  <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Paperclip size={16} /> Attachments
                     </label>
-                    {uploading && <span className="text-sm text-gray-500">Uploading...</span>}
+                    <div className="space-y-2">
+                      {attachments.map(att => (
+                        <div key={att.public_id} className="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded-lg shadow-sm">
+                          <div className="flex items-center gap-2 truncate">
+                            <File size={14} className="text-blue-500" />
+                            <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline truncate">
+                              {att.filename}
+                            </a>
+                          </div>
+                          <button onClick={() => deleteAttachment(att.public_id)} className="text-red-500 hover:bg-red-50 p-1 rounded">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2">
+                        <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 transition text-sm">
+                          <Plus size={14} /> Upload file
+                          <input type="file" onChange={handleFileUpload} className="hidden" disabled={uploading} />
+                        </label>
+                        {uploading && <span className="text-sm text-gray-500">Uploading...</span>}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* Checklist */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"><CheckSquare size={16} /> Checklist</label>
-                <div className="space-y-2">
-                  {checklist.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <input type="checkbox" checked={item.completed} onChange={() => {
-                        const newList = [...checklist];
-                        newList[idx].completed = !newList[idx].completed;
-                        setChecklist(newList);
-                      }} className="w-4 h-4" />
-                      <input value={item.text} onChange={(e) => {
-                        const newList = [...checklist];
-                        newList[idx].text = e.target.value;
-                        setChecklist(newList);
-                      }} className="flex-1 p-2 border rounded-lg dark:bg-gray-700" />
-                      <button onClick={() => setChecklist(checklist.filter((_, i) => i !== idx))} className="text-red-500">✖</button>
-                    </div>
-                  ))}
-                  <button onClick={() => setChecklist([...checklist, { text: '', completed: false }])} className="text-blue-600 text-sm">+ Add item</button>
-                </div>
-              </div>
-
-              {/* Comments */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><MessageSquare size={16} /> Comments</label>
-                <div className="max-h-40 overflow-y-auto border rounded-lg p-3 space-y-2 mb-2">
-                  {comments.length === 0 && <p className="text-gray-400 text-sm">No comments yet.</p>}
-                  {comments.map((c, i) => (
-                    <div key={i} className="text-sm border-b pb-1"><span className="font-semibold">{c.user?.name || 'User'}:</span> {c.text}</div>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <input value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Write a comment..." className="flex-1 p-2 border rounded-lg dark:bg-gray-700" />
-                  <button onClick={addComment} className="bg-blue-600 text-white px-4 py-2 rounded-lg">Post</button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">AI Assistant</label>
-                <AIGenerator onGenerate={(text) => setDescription(prev => prev + '\n\n' + text)} />
-              </div>
             </div>
 
-            <div className="border-t px-6 py-4 flex justify-end gap-3">
-              <button onClick={onClose} className="px-4 py-2 border rounded-lg">Cancel</button>
-              <button onClick={handleSave} disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2">
+            {/* Footer */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/50">
+              <button onClick={onClose} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition flex items-center gap-2 shadow-sm"
+              >
                 {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={16} />}
                 Save Changes
               </button>

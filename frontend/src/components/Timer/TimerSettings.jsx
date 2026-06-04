@@ -22,7 +22,7 @@ export default function TimerSettings({ cardId, currentDuration }) {
 
   return (
     <div>
-      <label className="flex items-center gap-2 text-sm font-medium mb-1"><Clock size={14} /> Timer (minutes)</label>
+  
       <div className="flex gap-2">
         <input type="number" value={minutes} onChange={(e) => setMinutes(parseInt(e.target.value) || 0)} className="w-24 p-2 border rounded dark:bg-gray-700" min="0" step="5" />
         <button onClick={setTimer} disabled={loading} className="bg-gray-200 dark:bg-gray-700 px-3 rounded text-sm">Set</button>
