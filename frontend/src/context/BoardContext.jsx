@@ -20,7 +20,6 @@ export const BoardProvider = ({ children, boardId }) => {
       const res = await api.get(`/boards/${boardId}`);
       setBoard(res.data);
       setLists(res.data.lists || []);
-      // Compute isOwner now that we have board and user
       if (user) {
         const ownerId = res.data.owner?._id || res.data.owner;
         setIsOwner(ownerId === user._id);
@@ -32,51 +31,85 @@ export const BoardProvider = ({ children, boardId }) => {
     }
   }, [boardId, user]);
 
-  const refresh = useCallback(() => {
-    setLoading(true);
-    fetchBoard();
-  }, [fetchBoard]);
+  const refresh = useCallback(() => fetchBoard(), [fetchBoard]);
 
-  // Wait for user to be loaded before fetching board
+  // Initial load + when user changes
   useEffect(() => {
     if (!user) return;
     fetchBoard();
   }, [fetchBoard, user]);
 
+  // Socket listeners – still useful for real‑time updates from other users
   useEffect(() => {
     if (!socket || !boardId) return;
     socket.emit('join-board', boardId);
-    const handleRefresh = () => fetchBoard();
-    socket.on('card:moved', handleRefresh);
-    socket.on('list:added', handleRefresh);
-    socket.on('card:updated', handleRefresh);
-    socket.on('timer:expired', handleRefresh);
+    const handleCardMoved = (data) => {
+      // optional: you could also update optimistically, but for now just refresh
+      fetchBoard();
+    };
+    socket.on('card:moved', handleCardMoved);
+    socket.on('list:added', () => fetchBoard());
+    socket.on('card:updated', () => fetchBoard());
     return () => {
-      socket.off('card:moved', handleRefresh);
-      socket.off('list:added', handleRefresh);
-      socket.off('card:updated', handleRefresh);
-      socket.off('timer:expired', handleRefresh);
+      socket.off('card:moved', handleCardMoved);
+      socket.off('list:added', () => fetchBoard());
+      socket.off('card:updated', () => fetchBoard());
     };
   }, [socket, boardId, fetchBoard]);
 
-  const addList = async (title) => {
+  // ---------- Granular state updates (no full refresh) ----------
+  const updateCardInState = (cardId, updatedData) => {
+    setLists(prevLists =>
+      prevLists.map(list => ({
+        ...list,
+        cards: list.cards.map(card =>
+          card._id === cardId ? { ...card, ...updatedData } : card
+        ),
+      }))
+    );
+  };
+
+  const deleteCardFromState = (cardId, listId) => {
+    setLists(prevLists =>
+      prevLists.map(list =>
+        list._id === listId
+          ? { ...list, cards: list.cards.filter(c => c._id !== cardId) }
+          : list
+      )
+    );
+  };
+
+  const addCardToState = (newCard, listId) => {
+    setLists(prevLists =>
+      prevLists.map(list =>
+        list._id === listId
+          ? { ...list, cards: [...list.cards, newCard] }
+          : list
+      )
+    );
+  };
+
+  // ---------- API calls that update state locally first ----------
+  const addCard = async (listId, title) => {
     try {
-      await api.post('/lists', { title, boardId });
-      socket?.emit('list:add', { boardId });
-      await fetchBoard();
+      const res = await api.post('/cards', { title, listId });
+      addCardToState(res.data, listId);
+      toast.success('Card added');
     } catch (err) {
       toast.error(err.response?.data?.message);
+      fetchBoard(); // revert if error
     }
   };
 
   const moveCard = async (cardId, sourceListId, destListId) => {
-    setLists((prevLists) => {
+    // Optimistic update (already done in your code)
+    setLists(prevLists => {
       const newLists = [...prevLists];
-      const sourceIndex = newLists.findIndex((l) => l._id === sourceListId);
-      const destIndex = newLists.findIndex((l) => l._id === destListId);
+      const sourceIndex = newLists.findIndex(l => l._id === sourceListId);
+      const destIndex = newLists.findIndex(l => l._id === destListId);
       if (sourceIndex === -1 || destIndex === -1) return prevLists;
       const sourceList = newLists[sourceIndex];
-      const cardIndex = sourceList.cards.findIndex((c) => c._id === cardId);
+      const cardIndex = sourceList.cards.findIndex(c => c._id === cardId);
       if (cardIndex === -1) return prevLists;
       const [movedCard] = sourceList.cards.splice(cardIndex, 1);
       movedCard.list = destListId;
@@ -97,17 +130,32 @@ export const BoardProvider = ({ children, boardId }) => {
     }
   };
 
-  const addCard = async (listId, title) => {
+  const addList = async (title) => {
     try {
-      await api.post('/cards', { title, listId });
-      await fetchBoard();
+      const res = await api.post('/lists', { title, boardId });
+      setLists(prev => [...prev, res.data]);
+      socket?.emit('list:add', { boardId });
     } catch (err) {
       toast.error(err.response?.data?.message);
+      fetchBoard();
     }
   };
 
   return (
-    <BoardContext.Provider value={{ board, lists, loading, isOwner, addList, moveCard, addCard, refresh }}>
+    <BoardContext.Provider
+      value={{
+        board,
+        lists,
+        loading,
+        isOwner,
+        addList,
+        moveCard,
+        addCard,
+        updateCardInState,
+        deleteCardFromState,
+        refresh, // kept for emergencies
+      }}
+    >
       {children}
     </BoardContext.Provider>
   );
