@@ -30,10 +30,7 @@ export default function OAuthRedirect() {
         .then((res) => {
           setUser(res.data);
           toast.success('Logged in successfully');
-          // 🔁 FAST RELOAD – almost invisible (100ms)
-          setTimeout(() => {
-            window.location.reload();
-          }, 100);
+          navigate('/');   // Go to dashboard
         })
         .catch(() => {
           localStorage.removeItem('token');
