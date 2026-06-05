@@ -1,5 +1,15 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+  "routes": [
+    { "src": "/static/(.*)", "dest": "/static/$1" },
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/(.*\\.js)", "dest": "/$1" },
+    { "src": "/(.*\\.css)", "dest": "/$1" },
+    { "src": "/(.*\\.ico)", "dest": "/$1" },
+    { "src": "/(.*\\.png)", "dest": "/$1" },
+    { "src": "/login", "dest": "/index.html" },
+    { "src": "/register", "dest": "/index.html" },
+    { "src": "/oauth-redirect", "dest": "/index.html" },
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/.*", "dest": "/index.html" }
   ]
 }
