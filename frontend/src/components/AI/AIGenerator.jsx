@@ -22,19 +22,21 @@ export default function AIGenerator({ onGenerate }) {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-      <div className="flex gap-2">
-        <input
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="e.g., Create a detailed description for: fix login bug"
-          className="flex-1 p-2 border rounded dark:bg-gray-800 text-sm"
-        />
-        <button onClick={generate} disabled={loading} className="bg-purple-600 text-white px-3 rounded flex items-center gap-1">
-          {loading ? <Loader size={14} className="animate-spin" /> : <Sparkles size={14} />}
-          Generate
-        </button>
-      </div>
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <input
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder="e.g., Write a checklist for..."
+        className="flex-1 p-2 border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800 text-sm"
+      />
+      <button
+        onClick={generate}
+        disabled={loading}
+        className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition shadow-sm"
+      >
+        {loading ? <Loader size={12} className="animate-spin" /> : <Sparkles size={12} />}
+        Generate
+      </button>
     </div>
   );
 }
