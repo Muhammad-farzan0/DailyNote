@@ -29,6 +29,8 @@ import notificationRoutes from './routes/notifications.js';
 import { setupSocket } from './sockets/index.js';
 import { startTimerScheduler } from './utils/timerScheduler.js';
 import errorHandler from './middleware/errorHandler.js';
+import attachmentRoutes from './routes/attachments.js';
+
 
 connectDB();
 
@@ -62,6 +64,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api', attachmentRoutes);
 
 app.use(errorHandler);
 

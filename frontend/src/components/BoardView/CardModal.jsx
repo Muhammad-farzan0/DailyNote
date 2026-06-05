@@ -183,6 +183,7 @@ export default function CardModal({ card, isOpen, onClose }) {
     }
   };
 
+  // ✅ Upload attachment (ImgBB) – unchanged, already correct
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -190,29 +191,28 @@ export default function CardModal({ card, isOpen, onClose }) {
     formData.append("file", file);
     setUploading(true);
     try {
-      const res = await api.post(
-        `/api/cards/${card._id}/attachments`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      );
+      const res = await api.post(`/cards/${card._id}/attachments`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setAttachments([...attachments, res.data.attachment]);
       toast.success("File uploaded");
     } catch (err) {
+      console.error(err);
       toast.error("Upload failed");
     } finally {
       setUploading(false);
     }
   };
 
-  const deleteAttachment = async (publicId) => {
+  // ✅ FIXED: Delete attachment – use image URL instead of public_id
+  const deleteAttachment = async (imageUrl) => {
     if (!window.confirm("Delete this attachment?")) return;
     try {
-      await api.delete(`/api/cards/${card._id}/attachments/${publicId}`);
-      setAttachments(attachments.filter((a) => a.public_id !== publicId));
-      toast.success("Attachment deleted");
+      await api.delete(`/cards/${card._id}/attachments/${encodeURIComponent(imageUrl)}`);
+      setAttachments(attachments.filter((a) => a.url !== imageUrl));
+      toast.success("Attachment removed");
     } catch (err) {
+      console.error(err);
       toast.error("Delete failed");
     }
   };
@@ -261,7 +261,7 @@ export default function CardModal({ card, isOpen, onClose }) {
               </div>
             </div>
 
-            {/* Main Content */}
+            {/* Main Content – unchanged except attachments section */}
             <div className="p-4 sm:p-6 space-y-6">
               {/* Title & Description */}
               <div>
@@ -282,7 +282,7 @@ export default function CardModal({ card, isOpen, onClose }) {
                 />
               </div>
 
-              {/* Labels */}
+              {/* Labels – unchanged */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Tag size={16} /> Labels
@@ -332,7 +332,7 @@ export default function CardModal({ card, isOpen, onClose }) {
                 )}
               </div>
 
-              {/* Due Date & Timer (inline on desktop) */}
+              {/* Due Date & Timer */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -356,7 +356,7 @@ export default function CardModal({ card, isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Assignees */}
+              {/* Assignees – unchanged */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Users size={16} /> Assignees
@@ -409,7 +409,7 @@ export default function CardModal({ card, isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Checklist – Collapsible */}
+              {/* Checklist – unchanged */}
               <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setShowChecklist(!showChecklist)}
@@ -477,7 +477,7 @@ export default function CardModal({ card, isOpen, onClose }) {
                 )}
               </div>
 
-              {/* Comments – Collapsible */}
+              {/* Comments – unchanged */}
               <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setShowComments(!showComments)}
@@ -534,7 +534,7 @@ export default function CardModal({ card, isOpen, onClose }) {
                 )}
               </div>
 
-              {/* Attachments – Collapsible */}
+              {/* ✅ Attachments – FIXED: use att.url as key and pass URL to delete */}
               <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setShowAttachments(!showAttachments)}
@@ -557,7 +557,7 @@ export default function CardModal({ card, isOpen, onClose }) {
                   <div className="p-4 space-y-3">
                     {attachments.map((att) => (
                       <div
-                        key={att.public_id}
+                        key={att.url}   // ✅ changed: use url instead of public_id
                         className="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded-lg shadow-sm"
                       >
                         <div className="flex items-center gap-2 truncate">
@@ -572,7 +572,7 @@ export default function CardModal({ card, isOpen, onClose }) {
                           </a>
                         </div>
                         <button
-                          onClick={() => deleteAttachment(att.public_id)}
+                          onClick={() => deleteAttachment(att.url)}   // ✅ changed: pass url
                           className="text-red-500 hover:bg-red-50 p-1 rounded"
                         >
                           <Trash2 size={12} />
@@ -599,7 +599,7 @@ export default function CardModal({ card, isOpen, onClose }) {
                 )}
               </div>
 
-              {/* AI Assistant – Compact row + hint, taller on mobile */}
+              {/* AI Assistant – unchanged */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 sm:p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                   <AlertCircle size={16} /> AI Assistant
@@ -617,7 +617,7 @@ export default function CardModal({ card, isOpen, onClose }) {
               </div>
             </div>
 
-            {/* Footer */}
+            {/* Footer – unchanged */}
             <div className="border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/50">
               <button
                 onClick={onClose}

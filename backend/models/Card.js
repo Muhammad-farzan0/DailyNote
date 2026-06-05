@@ -11,6 +11,13 @@ const checklistItemSchema = new mongoose.Schema({
   completed: { type: Boolean, default: false }
 });
 
+const attachmentSchema = new mongoose.Schema({
+  url: String,
+  filename: String,
+  uploadedAt: { type: Date, default: Date.now }
+});
+
+
 const cardSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String },
@@ -21,6 +28,7 @@ const cardSchema = new mongoose.Schema({
   checklist: [checklistItemSchema],
   assignees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   comments: [commentSchema],
+  attachments: [attachmentSchema],  
   timerDuration: { type: Number, default: 0 },
   timerStartedAt: { type: Date },
   timerExpired: { type: Boolean, default: false },
