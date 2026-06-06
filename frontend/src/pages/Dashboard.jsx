@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, LayoutGrid, CheckCircle, TrendingUp, Clock, Trash2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Plus, LayoutGrid, CheckCircle, TrendingUp, Clock, Trash2, Eye } from 'lucide-react';
+import { formatDistanceToNow, format } from 'date-fns';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ totalCards: 0, completedCards: 0, completionRate: 0 });
   const [recentActivity, setRecentActivity] = useState([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState(null);
   const { user } = useAuth();
   const location = useLocation();
 
@@ -30,7 +31,7 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ FIX: Fetch recent activity from ALL boards, combine, sort, take latest 10
+  // Fetch activities from all boards, attach board name
   const fetchRecentActivity = useCallback(async () => {
     const boardsData = await fetchBoards();
     if (boardsData.length === 0) {
@@ -39,16 +40,17 @@ export default function Dashboard() {
     }
     setLoadingActivity(true);
     try {
-      // Fetch activities from each board in parallel
       const activityPromises = boardsData.map(board =>
         api.get(`/activities/board/${board._id}`).then(res => res.data).catch(() => [])
       );
       const allActivitiesArrays = await Promise.all(activityPromises);
-      // Flatten and combine all activities
-      const allActivities = allActivitiesArrays.flat();
-      // Sort by newest first
+      // Flatten and add board name to each activity (backup if backend doesn't populate)
+      let allActivities = allActivitiesArrays.flat();
+      allActivities = allActivities.map(act => ({
+        ...act,
+        boardName: act.board?.name || boardsData.find(b => b._id === act.board)?.name || 'Unknown board'
+      }));
       allActivities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      // Take the latest 10
       setRecentActivity(allActivities.slice(0, 10));
     } catch (err) {
       console.error('Failed to load recent activity', err);
@@ -144,6 +146,14 @@ export default function Dashboard() {
     return `${userName} ${action}${details}`;
   };
 
+  const openDetailsModal = (activity) => {
+    setSelectedActivity(activity);
+  };
+
+  const closeModal = () => {
+    setSelectedActivity(null);
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
@@ -219,7 +229,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Recent Activity Sidebar */}
+        {/* Recent Activity Sidebar – with View Details button */}
         <div className="lg:col-span-1">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 sticky top-24">
             <div className="flex items-center gap-2 mb-4">
@@ -238,10 +248,21 @@ export default function Dashboard() {
                   <div key={idx} className="border-l-2 border-blue-300 dark:border-blue-700 pl-3 py-1">
                     <p className="text-sm text-gray-800 dark:text-gray-200">
                       {formatActivityMessage(act)}
+                      {act.boardName && (
+                        <span className="text-xs text-gray-500 block mt-0.5">Board: {act.boardName}</span>
+                      )}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {formatDistanceToNow(new Date(act.createdAt), { addSuffix: true })}
-                    </p>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-xs text-gray-400">
+                        {formatDistanceToNow(new Date(act.createdAt), { addSuffix: true })}
+                      </p>
+                      <button
+                        onClick={() => openDetailsModal(act)}
+                        className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1"
+                      >
+                        <Eye size={12} /> Details
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -284,6 +305,35 @@ export default function Dashboard() {
                 )}
                 {creatingBoard ? 'Creating...' : 'Create'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activity Details Modal */}
+      {selectedActivity && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeModal}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Activity Details</h3>
+              <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div><span className="font-semibold">User:</span> {selectedActivity.user?.name || 'Someone'}</div>
+              <div><span className="font-semibold">Action:</span> {selectedActivity.action?.replace(/_/g, ' ') || selectedActivity.action}</div>
+              <div><span className="font-semibold">Board:</span> {selectedActivity.boardName || selectedActivity.board?.name || 'Unknown'}</div>
+              {selectedActivity.details && (
+                <div>
+                  <span className="font-semibold">Details:</span>
+                  <pre className="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs overflow-auto">
+                    {JSON.stringify(selectedActivity.details, null, 2)}
+                  </pre>
+                </div>
+              )}
+              <div><span className="font-semibold">Time:</span> {format(new Date(selectedActivity.createdAt), 'PPP p')}</div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button onClick={closeModal} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Close</button>
             </div>
           </div>
         </div>
