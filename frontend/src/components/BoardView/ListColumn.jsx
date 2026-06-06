@@ -8,7 +8,6 @@ import api from '../../services/api';
 import { useBoard } from '../../context/BoardContext';
 import toast from 'react-hot-toast';
 
-// Default list titles that cannot be deleted
 const DEFAULT_LIST_TITLES = ['To Do', 'In Progress', 'Completed', 'Incomplete'];
 
 export default function ListColumn({ list }) {
@@ -16,13 +15,14 @@ export default function ListColumn({ list }) {
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   const [newCardTitle, setNewCardTitle] = useState('');
   const [adding, setAdding] = useState(false);
+  const [isAddingCard, setIsAddingCard] = useState(false); // ✅ Loading state for add card
   const { refresh } = useBoard();
-  const [deleting, setDeleting] = useState(false);
 
   const isDeletable = !DEFAULT_LIST_TITLES.includes(list.title);
 
   const addCard = async () => {
-    if (!newCardTitle.trim()) return;
+    if (!newCardTitle.trim() || isAddingCard) return; // ✅ Prevent if already adding
+    setIsAddingCard(true);
     try {
       await api.post('/cards', { title: newCardTitle, listId: list._id });
       setNewCardTitle('');
@@ -30,20 +30,20 @@ export default function ListColumn({ list }) {
       refresh();
     } catch (err) {
       toast.error(err.response?.data?.message);
+    } finally {
+      setIsAddingCard(false);
     }
   };
 
   const deleteList = async () => {
     if (!window.confirm(`Are you sure you want to delete the list "${list.title}" and all its cards? This action cannot be undone.`)) return;
-    setDeleting(true);
+    // Optional: add loading state for delete as well
     try {
       await api.delete(`/lists/${list._id}`);
       toast.success('List deleted');
       refresh();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete list');
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -62,7 +62,6 @@ export default function ListColumn({ list }) {
         {isDeletable && (
           <button
             onClick={deleteList}
-            disabled={deleting}
             className="p-1 rounded-full text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition"
             aria-label="Delete list"
           >
@@ -86,10 +85,23 @@ export default function ListColumn({ list }) {
             placeholder="Enter card title..."
             className="w-full p-2 border rounded dark:bg-gray-700 text-sm mb-2"
             onKeyDown={(e) => e.key === 'Enter' && addCard()}
+            disabled={isAddingCard}
           />
           <div className="flex gap-2">
-            <button onClick={addCard} className="bg-blue-600 text-white px-3 py-1 rounded text-sm">Add</button>
-            <button onClick={() => setAdding(false)} className="text-gray-500 text-sm">Cancel</button>
+            <button
+              onClick={addCard}
+              disabled={isAddingCard || !newCardTitle.trim()}
+              className="bg-blue-600 text-white px-3 py-1 rounded text-sm flex items-center gap-1 disabled:opacity-50"
+            >
+              {isAddingCard ? (
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                'Add'
+              )}
+            </button>
+            <button onClick={() => setAdding(false)} className="text-gray-500 text-sm" disabled={isAddingCard}>
+              Cancel
+            </button>
           </div>
         </div>
       ) : (

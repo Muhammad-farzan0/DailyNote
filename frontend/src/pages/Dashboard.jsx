@@ -30,17 +30,26 @@ export default function Dashboard() {
     }
   };
 
+  // ✅ FIX: Fetch recent activity from ALL boards, combine, sort, take latest 10
   const fetchRecentActivity = useCallback(async () => {
+    const boardsData = await fetchBoards();
+    if (boardsData.length === 0) {
+      setRecentActivity([]);
+      return;
+    }
+    setLoadingActivity(true);
     try {
-      const boardsData = await fetchBoards();
-      if (boardsData.length === 0) {
-        setRecentActivity([]);
-        return;
-      }
-      const firstBoardId = boardsData[0]._id;
-      setLoadingActivity(true);
-      const res = await api.get(`/activities/board/${firstBoardId}`);
-      setRecentActivity(res.data.slice(0, 10));
+      // Fetch activities from each board in parallel
+      const activityPromises = boardsData.map(board =>
+        api.get(`/activities/board/${board._id}`).then(res => res.data).catch(() => [])
+      );
+      const allActivitiesArrays = await Promise.all(activityPromises);
+      // Flatten and combine all activities
+      const allActivities = allActivitiesArrays.flat();
+      // Sort by newest first
+      allActivities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      // Take the latest 10
+      setRecentActivity(allActivities.slice(0, 10));
     } catch (err) {
       console.error('Failed to load recent activity', err);
     } finally {
@@ -90,7 +99,6 @@ export default function Dashboard() {
     fetchRecentActivity();
   }, [fetchAggregatedStats, fetchRecentActivity, location.pathname]);
 
-  // ✅ CREATE BOARD – with loading state to prevent double click
   const createBoard = async () => {
     if (!newBoardName.trim()) return;
     setCreatingBoard(true);
@@ -99,7 +107,6 @@ export default function Dashboard() {
       toast.success('Board created');
       setNewBoardName('');
       setShowNewBoard(false);
-      // Refresh all data in parallel (faster)
       await Promise.all([fetchBoards(), fetchAggregatedStats(), fetchRecentActivity()]);
     } catch (err) {
       toast.error(err.response?.data?.message);
@@ -108,7 +115,6 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ DELETE BOARD – owner only (backend already checks)
   const deleteBoard = async (boardId, boardName) => {
     if (!window.confirm(`Are you sure you want to delete the board "${boardName}"? This action cannot be undone.`)) {
       return;
@@ -191,7 +197,6 @@ export default function Dashboard() {
                         <h3 className="font-semibold text-lg">{board.name}</h3>
                         <p className="text-gray-500 text-sm mt-1">Created by {board.owner?.name || 'you'}</p>
                       </Link>
-                      {/* Delete button – only for owner */}
                       {isBoardOwner && (
                         <button
                           onClick={() => deleteBoard(board._id, board.name)}
