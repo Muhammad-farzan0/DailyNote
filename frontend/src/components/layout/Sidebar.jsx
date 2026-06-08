@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Kanban, BarChart3, Settings, User, ExternalLink, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import myIcon from '../../assets/icons/my-icon.png';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -44,7 +45,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <Kanban className="text-blue-600" size={28} />
+            <img src={myIcon} alt="DailyNote Icon" className="w-12 h-8 text-blue-600" />
             <span className="text-xl font-bold text-gray-800 dark:text-white">DailyNote</span>
           </div>
         </div>
